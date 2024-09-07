@@ -1,6 +1,7 @@
 //
 // Created by lovemefan on 2024/7/25.
 //
+#include <cuda_runtime.h>
 
 #include "sense-voice-decoder.h"
 #include <ggml.h>
@@ -156,11 +157,50 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
         // set the input
         {
             struct ggml_tensor *encoder_out = ggml_graph_get_tensor(gf, "encoder_out");
+            const int backend_name = encoder_out->backend;
+            printf("encoder_out backend: %d\n", backend_name);
+            // ggml_graph_export(gf, "123.txt");
+    printf("4444444444444444444444444444, %p, %p, %ld\n", encoder_out, state.encoder_out->data, ggml_nelements(encoder_out));
+    printf("5555555555555555555555555555, %s, %s\n", encoder_out->name, state.encoder_out->name);
+
+
+    void * gpu_data = state.encoder_out->data;
+    int length = 145920;
+
+    float* cpu_data = (float*)malloc(length * sizeof(float));
+    if (cpu_data == nullptr) {
+        std::cerr << "Failed to allocate CPU memory!" << std::endl;
+        return false;
+    }
+
+    cudaError_t err = cudaMemcpy(cpu_data, gpu_data, length * sizeof(float), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        std::cerr << "cudaMemcpy failed: " << cudaGetErrorString(err) << std::endl;
+        free(cpu_data);
+        return false;
+    }
+
+    std::cout << "Data copied from GPU:" << std::endl;
+    for (int i = length-3; i < length; ++i) {
+        std::cout << cpu_data[i] << " ";
+    }
+    std::cout << std::endl;
+    int64_t total_elements = ggml_nelements(encoder_out);
+    std::cout << "total_elements: " << total_elements << std::endl;
+    // 4. 释放 CPU 内存
+    free(cpu_data);
+   
+
+    //printf("state.encoder_out->data 0 -> %f\n", ((float*)state.encoder_out->data)[0]);
+
             ggml_backend_tensor_set(
                     encoder_out, state.encoder_out->data, 0,
                     ggml_nelements(encoder_out) * sizeof(float));
         }
+    std::cout << "end ggml_backend_tensor_set" << std::endl;
+    exit(0);
 
+    printf("8888888888888888888888888888\n");
         if (!ggml_graph_compute_helper(sched, gf, n_threads)) {
             return false;
         }
@@ -177,6 +217,7 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
             printf("\n");
         }
 
+    printf("9999999999999999999999999999\n");
     }
 //    ggml_tensor *logit = ggml_get_tensor(ctx)
     state.t_decode_us += ggml_time_us() - t_start_us;

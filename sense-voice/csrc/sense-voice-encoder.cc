@@ -92,56 +92,6 @@ struct sense_voice_context_params sense_voice_context_default_params() {
     return result;
 }
 
-static ggml_backend_t sense_voice_backend_init(
-        const sense_voice_context_params &params) {
-    ggml_backend_t backend_gpu = nullptr;
-
-    // initialize the backends
-#ifdef GGML_USE_CUDA
-    if (params.use_gpu) {
-        SENSE_VOICE_LOG_INFO("%s: using CUDA backend\n", __func__);
-        backend_gpu = ggml_backend_cuda_init(params.gpu_device);
-        if (!backend_gpu) {
-            SENSE_VOICE_LOG_ERROR("%s: ggml_backend_cuda_init() failed\n", __func__);
-        }
-    }
-#endif
-
-#ifdef GGML_USE_METAL
-    if (params.use_gpu) {
-        SENSEVOICE_LOG_INFO("%s: using Metal backend\n", __func__);
-        ggml_backend_metal_log_set_callback(g_state.log_callback,
-                                            g_state.log_callback_user_data);
-        backend_gpu = ggml_backend_metal_init();
-        if (!backend_gpu) {
-            SENSEVOICE_LOG_ERROR("%s: ggml_backend_metal_init() failed\n", __func__);
-        } else if (!ggml_backend_metal_supports_family(backend_gpu, 7)) {
-            SENSEVOICE_LOG_ERROR(
-                    "%s: Metal GPU does not support family 7 - falling back to CPU\n",
-                    __func__);
-            ggml_backend_free(backend_gpu);
-            backend_gpu = nullptr;
-        }
-    }
-#endif
-
-#ifdef GGML_USE_SYCL
-    if (params.use_gpu) {
-        SENSE_VOICE_LOG_INFO("%s: using SYCL backend\n", __func__);
-        backend_gpu = ggml_backend_sycl_init(params.gpu_device);
-        if (!backend_gpu) {
-            SENSE_VOICE_LOG_ERROR("%s: ggml_backend_sycl_init() failed\n", __func__);
-        }
-    }
-#endif
-
-    if (backend_gpu) {
-        return backend_gpu;
-    }
-    return ggml_backend_cpu_init();
-}
-
-
 static bool ggml_graph_compute_helper(
         ggml_backend_sched_t   sched,
         struct ggml_cgraph * graph,
@@ -400,7 +350,7 @@ struct ggml_cgraph *sense_voice_build_graph_encoder(sense_voice_context &pctx,
     ggml_set_input(embedding);
 
     embedding = ggml_get_rows(ctx0, model->embedding, embedding);
-
+    printf("cur backend=====");
     struct ggml_tensor *cur = ggml_concat(ctx0, embedding, feature, 1);
 
     cur = ggml_scale(ctx0, cur, sqrtf(hparams.n_encoder_hidden_state));
@@ -452,6 +402,9 @@ struct ggml_cgraph *sense_voice_build_graph_encoder(sense_voice_context &pctx,
 
     ggml_set_name(cur, "encoder_out");
     ggml_set_output(cur);
+    // ggml_backend_tensor_set(pstate.encoder_out, cur->data, 0, ggml_nelements(cur));
+    printf("cur backend : %d\n", cur->backend);
+    printf("cur name: %s\n",cur->name);
     pstate.encoder_out = cur;
     ggml_free(ctx0);
     return gf;
@@ -472,6 +425,7 @@ bool sense_voice_encode_internal(sense_voice_context &ctx,
         ggml_cgraph *gf = sense_voice_build_graph_encoder(ctx, state);
 
         if (!ggml_backend_sched_alloc_graph(sched, gf)) {
+            printf("#####");
             // should never happen as we pre-allocate the memory
             return false;
         }
@@ -529,6 +483,8 @@ bool sense_voice_encode_internal(sense_voice_context &ctx,
         if (!ggml_graph_compute_helper(sched, gf, n_threads)) {
             return false;
         }
+        printf("=======");
+        //printf("pstate.encoder_out: %f \n", ((float *)(state.encoder_out->data[0])));
 
     }
     state.t_encode_us += ggml_time_us() - t_start_us;

@@ -7,6 +7,7 @@
 #include <thread>
 #include <regex>
 #include <map>
+using namespace std;
 
 static const std::map<std::string, enum ggml_ftype> GGML_FTYPE_MAP = {
         {"q4_0", GGML_FTYPE_MOSTLY_Q4_0},

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(SenseVoice.cpp VERSION 1.1.0 LANGUAGES CXX)
+project(SenseVoice.cpp VERSION 1.1.0 LANGUAGES CXX CUDA)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib CACHE STRING "")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib CACHE STRING "")
@@ -60,15 +60,16 @@ set(GGML_ALL_WARNINGS       ${SENSE_VOICE_ALL_WARNINGS})
 set(GGML_FATAL_WARNINGS     ${SENSE_VOICE_FATAL_WARNINGS})
 
 # Required for relocatable CMake package
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build-info.cmake)
+# include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build-info.cmake)
 
 
 if(GGML_USE_BLAS)
     add_definitions(-DGGML_USE_BLAS)
 endif()
 
+
 add_subdirectory(sense-voice)
-include_directories(${PROJECT_SOURCE_DIR}/sense-voice/csrc/third-party/ggml/include/ggml ${PROJECT_SOURCE_DIR}/sense-voice/csrc/third-party/ggml/src)
+include_directories(${PROJECT_SOURCE_DIR}/sense-voice/csrc/third-party/ggml/include/ggml ${PROJECT_SOURCE_DIR}/sense-voice/csrc/third-party/ggml/src )
 add_subdirectory(sense-voice/csrc/third-party/ggml)
 
 

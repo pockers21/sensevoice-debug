@@ -5,6 +5,9 @@
 #pragma once
 
 #include "ggml.h"
+#include <cstdarg>
+#include <climits>
+#include <mutex>
 
 #include <fstream>
 #include <vector>
