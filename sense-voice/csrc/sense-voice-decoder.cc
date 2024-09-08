@@ -192,13 +192,12 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
    
 
     //printf("state.encoder_out->data 0 -> %f\n", ((float*)state.encoder_out->data)[0]);
-
-            ggml_backend_tensor_set(
+    ggml_backend_t cuda_backend = ggml_backend_cuda_init(0);
+    ggml_backend_tensor_set_async(cuda_backend,
                     encoder_out, state.encoder_out->data, 0,
                     ggml_nelements(encoder_out) * sizeof(float));
         }
     std::cout << "end ggml_backend_tensor_set" << std::endl;
-    exit(0);
 
     printf("8888888888888888888888888888\n");
         if (!ggml_graph_compute_helper(sched, gf, n_threads)) {
