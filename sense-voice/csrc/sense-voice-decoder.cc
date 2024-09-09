@@ -160,10 +160,11 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
             const int backend_name = encoder_out->backend;
             printf("encoder_out backend: %d\n", backend_name);
             // ggml_graph_export(gf, "123.txt");
-    printf("4444444444444444444444444444, %p, %p, %ld\n", encoder_out, state.encoder_out->data, ggml_nelements(encoder_out));
-    printf("5555555555555555555555555555, %s, %s\n", encoder_out->name, state.encoder_out->name);
+    printf("%p, %p, %ld\n", encoder_out, state.encoder_out->data, ggml_nelements(encoder_out));
+    printf("%s, %s\n", encoder_out->name, state.encoder_out->name);
 
-
+    //debug code***********/
+    // copy data from device to host
     void * gpu_data = state.encoder_out->data;
     int length = 145920;
 
@@ -187,8 +188,8 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
     std::cout << std::endl;
     int64_t total_elements = ggml_nelements(encoder_out);
     std::cout << "total_elements: " << total_elements << std::endl;
-    // 4. 释放 CPU 内存
     free(cpu_data);
+    /***********/
    
 
     //printf("state.encoder_out->data 0 -> %f\n", ((float*)state.encoder_out->data)[0]);
@@ -199,7 +200,6 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
         }
     std::cout << "end ggml_backend_tensor_set" << std::endl;
 
-    printf("8888888888888888888888888888\n");
         if (!ggml_graph_compute_helper(sched, gf, n_threads)) {
             return false;
         }
@@ -216,7 +216,6 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
             printf("\n");
         }
 
-    printf("9999999999999999999999999999\n");
     }
 //    ggml_tensor *logit = ggml_get_tensor(ctx)
     state.t_decode_us += ggml_time_us() - t_start_us;
