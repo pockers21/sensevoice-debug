@@ -412,7 +412,9 @@ struct ggml_cgraph *sense_voice_build_graph_encoder(sense_voice_context &pctx,
 
 bool sense_voice_encode_internal(sense_voice_context &ctx,
                                        sense_voice_state &state,
-                                       const int n_threads) {
+                                       const int n_threads,
+                                       struct ggml_tensor ** encode_out_tensor
+                                       ) {
     const int64_t t_start_us = ggml_time_us();
 
     const auto &model = ctx.model;
@@ -480,14 +482,18 @@ bool sense_voice_encode_internal(sense_voice_context &ctx,
 //        ggml_graph_dump_dot(gf, NULL, "sense-voice.dot");
 //        ggml_backend_sched_set_eval_callback(sched, ctx.params.cb_eval, ctx.params.cb_eval_user_data);
 
+        printf("end sense_voice_build_graph_encoder\n");
         if (!ggml_graph_compute_helper(sched, gf, n_threads)) {
             return false;
         }
-        printf("=======");
-        //printf("pstate.encoder_out: %f \n", ((float *)(state.encoder_out->data[0])));
+        printf("ggml_graph_get_tensor\n");
+
+        *encode_out_tensor = ggml_graph_get_tensor(gf, "encoder_out");
+        printf("ggml_graph_get_tensor end\n");
 
     }
     state.t_encode_us += ggml_time_us() - t_start_us;
+
     return true;
 }
 

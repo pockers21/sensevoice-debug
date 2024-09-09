@@ -798,7 +798,9 @@ int sense_voice_full_with_state(
 
     // encode audio features starting at offset seek
     //printf("11111111111111111111111111: %d, %d\n", ggml_backend_is_cuda(ctx->backend), (ctx->state == state));
-    if (!sense_voice_encode_internal(*ctx, *state, params.n_threads)) {
+
+    struct ggml_tensor * encode_out_tensor = nullptr;
+    if (!sense_voice_encode_internal(*ctx, *state, params.n_threads, &encode_out_tensor)) {
         SENSE_VOICE_LOG_ERROR("%s: failed to encode\n", __func__);
         return -6;
     }
@@ -806,12 +808,11 @@ int sense_voice_full_with_state(
 //
     printf("22222222222222222222222222: %p, %p\n", state->encoder_out->data, state->encoder_out);
 //    // encode audio features starting at offset seek
-    if (!sense_voice_decode_internal(*ctx, *state, params.n_threads)) {
-        SENSE_VOICE_LOG_ERROR("%s: failed to decode\n", __func__);
+    if (!sense_voice_decode_internal(*ctx, *state, params.n_threads, encode_out_tensor)) {
+        SENSE_VOICE_LOG_ERROR("%s: failed to decode ....\n", __func__);
         return -6;
     }
 
-    printf("33333333333333333333333333\n");
     SENSE_VOICE_LOG_INFO("\n%s: decoder audio use %f s, rtf is %f. \n\n",
                          __func__,
                          (state->t_encode_us + state->t_decode_us) / 1e6,

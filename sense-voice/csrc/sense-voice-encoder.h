@@ -93,6 +93,7 @@ bool set_sense_voice_encoder_layer_sanm(
 
 bool sense_voice_encode_internal(sense_voice_context &ctx,
                             sense_voice_state &state,
-                            const int n_threads);
+                            const int n_threads,
+                            struct ggml_tensor ** encode_out_tensor);
 
 #endif//SENSEVOICE_CPP_SENSE_VOICE_ENCODER_H

@@ -135,7 +135,8 @@ static bool ggml_graph_compute_helper(
 
 bool sense_voice_decode_internal(sense_voice_context &ctx,
                                  sense_voice_state &state,
-                                 const int n_threads) {
+                                 const int n_threads,
+                                 struct ggml_tensor * encode_out_tensor) {
     const int64_t t_start_us = ggml_time_us();
 
     // decoder
@@ -165,8 +166,11 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
 
             //debug code***********/
             // copy data from device to host
+            int64_t total_elements = ggml_nelements(encoder_out);
+            std::cout << "total_elements: " << total_elements << std::endl;
+
             void * gpu_data = state.encoder_out->data;
-            int length = 145920;
+            int length = total_elements;
 
             float* cpu_data = (float*)malloc(length * sizeof(float));
             if (cpu_data == nullptr) {
@@ -186,27 +190,34 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
                 std::cout << cpu_data[i] << " ";
             }
             std::cout << std::endl;
-            int64_t total_elements = ggml_nelements(encoder_out);
-            std::cout << "total_elements: " << total_elements << std::endl;
+
             free(cpu_data);
 
-
+            /*
             ggml_backend_t cuda_backend = ggml_backend_cuda_init(0);
             ggml_backend_tensor_set_async(cuda_backend,
                             encoder_out, state.encoder_out->data, 0,
                             ggml_nelements(encoder_out) * sizeof(float));
-
+            */
+            std::cout << encode_out_tensor << std::endl;
+            size_t nbytes = ggml_nbytes(encode_out_tensor);
+            void * data = malloc(nbytes);
+            ggml_backend_tensor_get(encode_out_tensor, data, 0, nbytes);
+            ggml_backend_tensor_set(encoder_out, data, 0, nbytes);
+            free(data);
+            /*
             // origin tensor set
             ggml_backend_tensor_set(
                             encoder_out, state.encoder_out->data, 0,
                             ggml_nelements(encoder_out) * sizeof(float));
-                            */
-            //end debug*************//
+            */
+
 
     }
     std::cout << "end ggml_backend_tensor_set" << std::endl;
 
         if (!ggml_graph_compute_helper(sched, gf, n_threads)) {
+
             return false;
         }
         {
@@ -216,13 +227,14 @@ bool sense_voice_decode_internal(sense_voice_context &ctx,
 
             for(int id: state.ids){
                 if (id != 0) {
-                    printf("%s", ctx.vocab.id_to_token[id].c_str());
+                    printf("result:  %s", ctx.vocab.id_to_token[id].c_str());
                 }
             }
             printf("\n");
         }
 
     }
+    printf("return ...\n");
 //    ggml_tensor *logit = ggml_get_tensor(ctx)
     state.t_decode_us += ggml_time_us() - t_start_us;
 
